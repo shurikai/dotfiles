@@ -1,0 +1,18 @@
+{{- /* TARGET paths (as they appear in $HOME). Rendered as a template. */ -}}
+
+{{ if ne .role "workstation" -}}
+# WezTerm only where it can run: the Mac. Not on the Centene VDI path.
+.config/wezterm
+{{- end }}
+
+{{ if not .full -}}
+# Servers / the Proxmox host: shell, git, tmux. No toolchain, no full editor.
+.config/mise
+.config/nvim
+.config/bat
+.config/btop
+{{- end }}
+
+{{ if ne .chezmoi.os "darwin" -}}
+Library
+{{- end }}

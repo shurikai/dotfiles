@@ -1,0 +1,64 @@
+# Managed by chezmoi: edit with `chezmoi edit ~/.zshrc`.
+# Role: {{ .role }}
+
+# ---- History -----------------------------------------------------------------
+HISTFILE=$HOME/.zsh_history
+HISTSIZE=50000
+SAVEHIST=50000
+setopt extended_history hist_ignore_dups hist_ignore_space share_history
+
+# ---- Completion ----------------------------------------------------------------
+autoload -Uz compinit
+compinit
+
+# ---- Toolchain -----------------------------------------------------------------
+(( $+commands[mise] )) && eval "$(mise activate zsh)"
+
+# ---- Aliases -------------------------------------------------------------------
+(( $+commands[eza] )) && alias ls="eza --icons=always --git"
+(( $+commands[bat] )) && alias cat='bat'
+
+# ---- fzf, with fd for candidates -----------------------------------------------
+if (( $+commands[fzf] )); then
+    eval "$(fzf --zsh)"
+
+    if (( $+commands[fd] )); then
+        export FZF_DEFAULT_COMMAND="fd --hidden --strip-cwd-prefix --exclude .git"
+        export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
+        export FZF_ALT_C_COMMAND="fd --type=d --hidden --strip-cwd-prefix --exclude .git"
+        _fzf_compgen_path() { fd --hidden --exclude .git . "$1"; }
+        _fzf_compgen_dir()  { fd --type=d --hidden --exclude .git . "$1"; }
+    fi
+
+    # Theme. Due for a scrub along with everything else.
+    fg="#CBE0F0"
+    bg="#011628"
+    bg_highlight="#143652"
+    purple="#B388FF"
+    blue="#06BCE4"
+    cyan="#2CF9ED"
+    export FZF_DEFAULT_OPTS="--color=fg:${fg},bg:${bg},hl:${purple},fg+:${fg},bg+:${bg_highlight},hl+:${purple},info:${blue},prompt:${cyan},pointer:${cyan},marker:${cyan},spinner:${cyan},header:${cyan}"
+    unset fg bg bg_highlight purple blue cyan
+fi
+
+# ---- Plugins (fetched by chezmoi, see .chezmoiexternal.toml) --------------
+zplugins=$HOME/.local/share/zsh/plugins
+if [[ -f $zplugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ]]; then
+    source "$zplugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
+    (( ${+ZSH_HIGHLIGHT_STYLES} )) || typeset -A ZSH_HIGHLIGHT_STYLES
+    ZSH_HIGHLIGHT_STYLES[path]=none
+    ZSH_HIGHLIGHT_STYLES[path_prefix]=none
+fi
+[[ -f $zplugins/zsh-autosuggestions/zsh-autosuggestions.zsh ]] &&
+    source "$zplugins/zsh-autosuggestions/zsh-autosuggestions.zsh"
+unset zplugins
+
+# ---- Machine-local additions (not in the repo) ---------------------------------
+[[ -f $HOME/.config/zsh/local.zsh ]] && source "$HOME/.config/zsh/local.zsh"
+
+# ---- Prompt --------------------------------------------------------------------
+(( $+commands[starship] )) && eval "$(starship init zsh)"
+
+# ---- SDKMAN: must stay at the end of the file ----------------------------------
+export SDKMAN_DIR="$HOME/.sdkman"
+[[ -s "$SDKMAN_DIR/bin/sdkman-init.sh" ]] && source "$SDKMAN_DIR/bin/sdkman-init.sh"

@@ -1,0 +1,26 @@
+# Managed by chezmoi. Login shells: PATH and environment only.
+
+{{ if eq .chezmoi.os "darwin" -}}
+# Homebrew: /opt/homebrew on Apple Silicon, /usr/local on Intel.
+for brew in /opt/homebrew/bin/brew /usr/local/bin/brew; do
+    if [[ -x $brew ]]; then
+        eval "$($brew shellenv)"
+        break
+    fi
+done
+
+{{ end -}}
+typeset -U path PATH
+path=("$HOME/.local/bin" $path)
+
+{{ if .full -}}
+# mise shims for non-interactive and login-only contexts (GUI apps, IDEs,
+# scripts). Interactive shells use `mise activate` in ~/.zshrc instead.
+path=("$HOME/.local/share/mise/shims" $path)
+
+{{ end -}}
+export EDITOR={{ if .full }}nvim{{ else }}vim{{ end }}
+export VISUAL=$EDITOR
+
+# Machine-local additions that never go in the repo (OrbStack, cloud CLIs, ...).
+[[ -f $HOME/.config/zsh/local.zprofile ]] && source "$HOME/.config/zsh/local.zprofile"

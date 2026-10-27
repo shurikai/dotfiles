@@ -1,0 +1,37 @@
+{{- if eq .chezmoi.os "linux" -}}
+#!/bin/sh
+# Base packages from the distro: git, curl, unzip, zip (SDKMAN), zsh, and
+# {{ if .full }}a C toolchain (treesitter parsers) plus btop{{ else }}tmux (servers don't get mise){{ end }}.
+# Never blocks: if sudo needs a password or isn't allowed (Coder), it prints
+# what's missing and carries on.
+set -eu
+
+. /etc/os-release
+if [ "$(id -u)" -eq 0 ]; then
+    SUDO=""
+elif sudo -n true 2>/dev/null; then
+    SUDO="sudo -n"
+elif [ -t 0 ]; then
+    SUDO="sudo"
+else
+    echo "prereqs: no non-interactive sudo; install git curl unzip zip zsh yourself if missing." >&2
+    exit 0
+fi
+
+{{- $extra := "tmux" }}
+{{- if .full }}{{ $extra = "btop" }}{{ end }}
+
+case " ${ID:-} ${ID_LIKE:-} " in
+    *" void "*)
+        $SUDO xbps-install -Sy git curl unzip zip zsh {{ $extra }}{{ if .full }} gcc make{{ end }} ;;
+    *" arch "*)
+        $SUDO pacman -Syu --needed --noconfirm git curl unzip zip zsh {{ $extra }}{{ if .full }} base-devel{{ end }} ;;
+    *" debian "* | *" ubuntu "*)
+        $SUDO apt-get update
+        $SUDO apt-get install -y git curl unzip zip zsh {{ $extra }}{{ if .full }} build-essential{{ end }} ;;
+    *" fedora "* | *" rhel "*)
+        $SUDO dnf install -y git curl unzip zip zsh {{ $extra }}{{ if .full }} gcc make{{ end }} ;;
+    *)
+        echo "prereqs: unrecognized distro '${ID:-?}'. Install git curl unzip zip zsh {{ $extra }} yourself." >&2 ;;
+esac
+{{ end -}}

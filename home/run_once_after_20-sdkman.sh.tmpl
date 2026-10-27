@@ -1,0 +1,10 @@
+{{- if .full -}}
+#!/bin/sh
+# SDKMAN for Java. rcupdate=false: ~/.zshrc already sources it, so the
+# installer must not append to the managed rc files.
+set -eu
+if [ ! -s "$HOME/.sdkman/bin/sdkman-init.sh" ]; then
+    curl -fsSL "https://get.sdkman.io?rcupdate=false" | bash
+    echo "SDKMAN installed. Open a new shell, then e.g.: sdk install java"
+fi
+{{ end -}}

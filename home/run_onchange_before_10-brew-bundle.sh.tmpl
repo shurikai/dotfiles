@@ -1,0 +1,27 @@
+{{- if eq .chezmoi.os "darwin" -}}
+#!/bin/sh
+# macOS-only packages. Cross-platform CLI tools come from mise instead, so
+# they match the Linux machines. Re-runs whenever this list changes.
+set -eu
+
+for b in /opt/homebrew/bin/brew /usr/local/bin/brew; do
+    [ -x "$b" ] && eval "$("$b" shellenv)" && break
+done
+if ! command -v brew >/dev/null 2>&1; then
+    echo "Homebrew isn't installed. Install it from https://brew.sh, then run: chezmoi apply" >&2
+    exit 1
+fi
+
+brew bundle --file=/dev/stdin <<'EOF'
+brew "chezmoi"
+brew "mise"
+brew "gh"
+brew "git"
+brew "eza"
+brew "btop"
+{{- if eq .role "workstation" }}
+cask "wezterm"
+cask "font-iosevka-term-nerd-font"
+{{- end }}
+EOF
+{{ end -}}

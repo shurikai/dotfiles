@@ -1,0 +1,5 @@
+# Managed by chezmoi. Read by every zsh, including scripts, so keep it tiny.
+#
+# Deliberately does NOT set ZDOTDIR: config lives in ~/.zshrc and ~/.zprofile.
+# PATH is set in ~/.zprofile, because macOS's /etc/zprofile (path_helper)
+# reorders anything set here.

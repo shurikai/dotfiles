@@ -1,0 +1,30 @@
+# Managed by chezmoi: edit with `chezmoi edit ~/.config/mise/config.toml`.
+# Changing this file re-runs `mise install` on the next `chezmoi apply`.
+#
+# Same tools at the same versions on every distro. Pin anything whose drift
+# you've felt; bump on one machine, commit, `chezmoi update` elsewhere.
+
+[tools]
+# Editor
+neovim = "0.12.5"   # if your current config misbehaves, pin to `nvim --version` from the old Mac
+ripgrep = "latest"
+fd = "latest"
+fzf = "latest"
+
+# Shell + terminal
+starship = "latest"
+tmux = "latest"
+bat = "latest"
+git-lfs = "latest"
+{{- if ne .chezmoi.os "darwin" }}
+# On macOS these come from Homebrew (mise's macOS builds for them are weak).
+eza = "latest"
+{{- end }}
+
+# Languages (Java comes from SDKMAN, not mise)
+go = "latest"
+node = "lts"        # runtime for npm-distributed language servers (Mason)
+uv = "latest"
+
+# Go tooling that conform.nvim calls on save
+"go:golang.org/x/tools/cmd/goimports" = "latest"

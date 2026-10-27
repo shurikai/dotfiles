@@ -1,0 +1,15 @@
+# Managed by chezmoi.
+case $- in *i*) ;; *) return ;; esac
+
+{{ if eq .role "work" -}}
+# Coder workspaces often won't let you chsh. Hop into zsh for interactive
+# shells instead; ZSH_HANDOFF prevents a loop if zsh itself starts bash.
+if [ -z "${ZSH_HANDOFF:-}" ] && command -v zsh >/dev/null 2>&1; then
+    export ZSH_HANDOFF=1
+    exec zsh -l
+fi
+
+{{ end -}}
+case ":$PATH:" in *":$HOME/.local/bin:"*) ;; *) PATH="$HOME/.local/bin:$PATH" ;; esac
+export PATH
+command -v mise >/dev/null 2>&1 && eval "$(mise activate bash)"

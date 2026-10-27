@@ -1,0 +1,21 @@
+{{- $lazyLock := joinPath .chezmoi.workingTree "nvim" "lazy-lock.json" -}}
+{{- if .full -}}
+#!/bin/sh
+# Puts Neovim plugins at exactly the revisions in the committed lockfile.
+# Re-runs whenever the lockfile changes, i.e. after you pull an update made
+# on another machine.
+# lockfile hash: {{ if stat $lazyLock }}{{ include $lazyLock | sha256sum }}{{ else }}none{{ end }}
+set -eu
+export PATH="$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
+
+if command -v mise >/dev/null 2>&1 && mise which nvim >/dev/null 2>&1; then
+    nvim() { mise exec -- nvim "$@"; }
+elif ! command -v nvim >/dev/null 2>&1; then
+    echo "nvim-restore: nvim not found, skipping" >&2
+    exit 0
+fi
+
+if [ -f "$HOME/.config/nvim/lazy-lock.json" ]; then
+    nvim --headless '+Lazy! restore' +qa </dev/null
+fi
+{{ end -}}

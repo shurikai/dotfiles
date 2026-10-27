@@ -1,0 +1,13 @@
+{{- if .full -}}
+#!/bin/sh
+# Re-runs whenever the mise config changes.
+# config hash: {{ include "dot_config/mise/config.toml.tmpl" | sha256sum }}
+set -eu
+export PATH="$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
+
+if ! command -v mise >/dev/null 2>&1; then
+    curl -fsSL https://mise.run | sh
+fi
+
+MISE_YES=1 mise install
+{{ end -}}

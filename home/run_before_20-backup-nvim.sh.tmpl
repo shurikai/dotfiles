@@ -1,0 +1,13 @@
+{{- if .full -}}
+#!/bin/sh
+# ~/.config/nvim becomes a symlink into this repo. If a real directory is
+# there (first apply on an existing machine), move it aside instead of
+# letting chezmoi replace it.
+set -eu
+t="$HOME/.config/nvim"
+if [ -e "$t" ] && [ ! -L "$t" ]; then
+    b="$t.pre-chezmoi.$(date +%Y%m%d%H%M%S)"
+    mv "$t" "$b"
+    echo "Moved existing $t to $b"
+fi
+{{ end -}}

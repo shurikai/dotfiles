@@ -1,0 +1,34 @@
+{{- /*
+  Asked once per machine, cached in ~/.config/chezmoi/chezmoi.toml.
+  Re-answer with:  chezmoi init --prompt
+
+  Non-interactive (Coder, scripts): the --prompt* override flags match the
+  PROMPT TEXT, not the variable name, so keep these strings in sync with
+  install.sh:
+    chezmoi init --promptChoice "Machine role=server" --promptString "Personal git email=me@example.com"
+*/ -}}
+{{- $roles := list "workstation" "devbox" "work" "server" "scratch" -}}
+{{- $role := promptChoiceOnce . "role" "Machine role" $roles -}}
+{{- /* --promptChoice values skip the choice list, so validate anyway. */ -}}
+{{- if not (has $role $roles) -}}
+{{-   fail (printf "unknown role %q; expected one of: %s" $role (join ", " $roles)) -}}
+{{- end -}}
+
+{{- /* Work machines take their git identity from the environment (Coder
+       templates usually set GIT_AUTHOR_* / GIT_COMMITTER_*), so never ask. */ -}}
+{{- $email := "" -}}
+{{- if ne $role "work" -}}
+{{-   $email = promptStringOnce . "email" "Personal git email" -}}
+{{- end -}}
+
+# Repo root, not the home/ subdirectory. Matters when the repo lives somewhere
+# other than ~/.local/share/chezmoi, e.g. where Coder clones it.
+sourceDir = {{ .chezmoi.workingTree | quote }}
+
+[data]
+    role = {{ $role | quote }}
+    email = {{ $email | quote }}
+    # full: editor + toolchain via mise. Off only for servers / the hypervisor.
+    full = {{ ne $role "server" }}
+    # trusted: OK to pull personal secrets later (password manager, SSH config)
+    trusted = {{ has $role (list "workstation" "devbox") }}

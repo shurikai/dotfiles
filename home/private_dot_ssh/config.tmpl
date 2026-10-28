@@ -1,0 +1,18 @@
+# Managed by chezmoi (workstation role). Machine-only hosts go in
+# ~/.ssh/config.local, which is not in the repo.
+
+Host devbox
+    HostName devbox
+    ForwardAgent yes
+    ControlMaster auto
+    ControlPath ~/.ssh/cm-%r@%h:%p
+    ControlPersist 10m
+    ServerAliveInterval 30
+
+Include ~/.ssh/config.local
+
+Host *
+    AddKeysToAgent yes
+{{- if eq .chezmoi.os "darwin" }}
+    UseKeychain yes
+{{- end }}

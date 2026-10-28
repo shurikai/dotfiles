@@ -1,0 +1,54 @@
+{{- if and (eq .role "devbox") (eq .chezmoi.os "linux") (eq .chezmoi.osRelease.id "void") -}}
+{{- $keys := joinPath .chezmoi.homeDir ".ssh" "authorized_keys" -}}
+#!/bin/sh
+# Void dev box, system level: runit services, locale, sshd, no suspend.
+# Idempotent. Re-runs when this file changes, and once more automatically
+# after ~/.ssh/authorized_keys appears, which is when password SSH turns off.
+# authorized_keys present: {{ if stat $keys }}yes{{ else }}no{{ end }}
+set -eu
+
+sudo xbps-install -Sy openssh tailscale mosh docker docker-compose restic
+
+for svc in sshd tailscaled docker; do
+    [ -e "/var/service/$svc" ] || sudo ln -s "/etc/sv/$svc" /var/service/
+done
+id -nG "$USER" | grep -qw docker || sudo usermod -aG docker "$USER"
+
+# Locale, so the Mac's LANG/LC_* over SSH doesn't produce warnings.
+if ! locale -a 2>/dev/null | grep -qi '^en_US\.utf-\{0,1\}8$'; then
+    sudo sed -i 's/^#[[:space:]]*en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/default/libc-locales
+    sudo xbps-reconfigure -f glibc-locales
+fi
+
+sshd_config=/etc/ssh/sshd_config
+grep -q '^AcceptEnv LANG LC_\*' "$sshd_config" ||
+    echo 'AcceptEnv LANG LC_*' | sudo tee -a "$sshd_config" >/dev/null
+
+{{ if stat $keys -}}
+# A key is installed, so it's safe to turn off password logins.
+sudo sed -i \
+    -e 's/^#\{0,1\}PasswordAuthentication .*/PasswordAuthentication no/' \
+    -e 's/^#\{0,1\}KbdInteractiveAuthentication .*/KbdInteractiveAuthentication no/' \
+    "$sshd_config"
+{{- else -}}
+echo "devbox: no ~/.ssh/authorized_keys yet, so password SSH stays on."
+echo "        From the Mac: ssh-copy-id devbox   then here: chezmoi apply"
+{{- end }}
+sudo sv restart sshd || true
+
+# Headless: never suspend (only matters if elogind is installed).
+if [ -f /etc/elogind/logind.conf ]; then
+    sudo sed -i \
+        -e 's/^#\{0,1\}HandleSuspendKey=.*/HandleSuspendKey=ignore/' \
+        -e 's/^#\{0,1\}HandleLidSwitch=.*/HandleLidSwitch=ignore/' \
+        -e 's/^#\{0,1\}IdleAction=.*/IdleAction=ignore/' \
+        /etc/elogind/logind.conf
+fi
+
+mkdir -p "$HOME/src"
+
+if ! sudo tailscale status >/dev/null 2>&1; then
+    echo "devbox: run 'sudo tailscale up' to join the tailnet."
+fi
+echo "devbox: log out and back in once for the docker group."
+{{ end -}}

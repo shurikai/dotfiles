@@ -22,6 +22,8 @@ brew "btop"
 {{- if eq .role "workstation" }}
 cask "wezterm"
 cask "font-iosevka-term-nerd-font"
+brew "mosh"
+cask "tailscale"
 {{- end }}
 EOF
 {{ end -}}

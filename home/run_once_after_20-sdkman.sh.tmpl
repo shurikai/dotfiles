@@ -1,10 +1,18 @@
-{{- if .full -}}
+{{- /* Not on work: get.sdkman.io is blocked on the Centene network, and Java
+       comes from the workspace image there. */ -}}
+{{- if and .full (ne .role "work") -}}
 #!/bin/sh
 # SDKMAN for Java. rcupdate=false: ~/.zshrc already sources it, so the
 # installer must not append to the managed rc files.
 set -eu
 if [ ! -s "$HOME/.sdkman/bin/sdkman-init.sh" ]; then
-    curl -fsSL "https://get.sdkman.io?rcupdate=false" | bash
-    echo "SDKMAN installed. Open a new shell, then e.g.: sdk install java"
+    # Download first: a failed `curl | bash` would look like success.
+    if script=$(curl -fsSL --connect-timeout 10 "https://get.sdkman.io?rcupdate=false"); then
+        printf '%s\n' "$script" | bash
+        echo "SDKMAN installed. Open a new shell, then e.g.: sdk install java"
+    else
+        echo "sdkman: get.sdkman.io unreachable. Install later with:" >&2
+        echo "        curl -s 'https://get.sdkman.io?rcupdate=false' | bash" >&2
+    fi
 fi
 {{ end -}}

@@ -18,7 +18,7 @@ Change with `chezmoi init --prompt`.
 | Role | Machine | WezTerm + font | Toolchain + Neovim | tmux |
 |---|---|---|---|---|
 | `workstation` | MacBook Pro | yes | yes | yes |
-| `devbox` | Void dev box | no | yes | yes |
+| `devbox` | Void dev box (headless) | no | yes | yes |
 | `work` | Coder workspace | no (VDI) | yes | yes, the main multiplexer |
 | `server` | Proxmox host, homelab | no | no | yes, from the distro |
 | `scratch` | Arch VMs, distro-hopping | no | yes | yes |
@@ -66,6 +66,47 @@ Non-interactive, e.g. a fresh Proxmox VM or LXC:
 ```sh
 DOTFILES_ROLE=server DOTFILES_EMAIL=you@example.com ./install.sh
 ```
+
+## Bootstrap: Void dev box (headless, always on)
+
+The Mac is the terminal; the box is where code, toolchains, containers and
+long-running work (tests, agents) live. You reconnect to it, never sync.
+
+```sh
+sudo xbps-install -Sy git curl
+git clone https://github.com/shurikai/dotfiles ~/.local/share/chezmoi
+DOTFILES_ROLE=devbox ~/.local/share/chezmoi/install.sh
+```
+
+Beyond the usual Linux setup, `run_onchange_after_40-devbox-system.sh.tmpl`
+(devbox role on Void only) installs openssh, tailscale, mosh, docker and
+restic; enables `sshd`, `tailscaled` and `docker` under runit; generates the
+`en_US.UTF-8` locale; adds `AcceptEnv LANG LC_*`; and stops elogind from
+suspending the box.
+
+Then, by hand:
+
+1. `sudo tailscale up`, and turn on MagicDNS in the admin console so `devbox`
+   resolves from the Mac.
+2. `chsh -s "$(command -v zsh)"`, then log out and back in (also picks up
+   the docker group).
+3. From the Mac: `ssh-copy-id devbox`.
+4. On the box: `chezmoi apply`. The system script notices
+   `~/.ssh/authorized_keys` and re-runs, this time turning off password and
+   keyboard-interactive SSH. It never does that before a key is installed.
+
+Projects go in `~/src` (or `~/src/<group>/<name>`).
+
+**From the Mac** (workstation role adds mosh, Tailscale and `~/.ssh/config`):
+
+- **Cmd-Shift-D** in WezTerm opens a tab on the box via mosh, attached to a
+  persistent tmux session called `main`.
+- **`tms`** (or **prefix f** inside tmux) fuzzy-picks a project and attaches to
+  its own session, creating it if needed.
+- WezTerm's leader is also Ctrl-b, so press **Ctrl-b Ctrl-b** to reach tmux.
+- Dev servers: bind to `0.0.0.0` and open `http://devbox:<port>` on the Mac.
+- `~/.ssh/config` is managed on the Mac: put any other hosts in
+  `~/.ssh/config.local`.
 
 ## Bootstrap: Coder
 

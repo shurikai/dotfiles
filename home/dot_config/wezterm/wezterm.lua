@@ -77,6 +77,16 @@ config.keys = {
 	{ key = "n", mods = "LEADER", action = act.ShowTabNavigator },
 
 	{ key = "w", mods = "LEADER", action = act.ShowLauncherArgs({ flags = "FUZZY|WORKSPACES" }) },
+
+	-- Cmd-Shift-D: new tab on the dev box, attached to its persistent "main"
+	-- tmux session. Login shell so Homebrew's mosh is on PATH.
+	{
+		key = "d",
+		mods = "CMD|SHIFT",
+		action = act.SpawnCommandInNewTab({
+			args = { "/bin/zsh", "-lc", "mosh devbox -- tmux new -A -s main" },
+		}),
+	},
 }
 
 config.key_tables = {

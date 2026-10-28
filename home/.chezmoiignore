@@ -3,6 +3,8 @@
 {{ if ne .role "workstation" -}}
 # WezTerm only where it can run: the Mac. Not on the Centene VDI path.
 .config/wezterm
+# SSH client config (devbox alias etc.) is for the Mac only.
+.ssh
 {{- end }}
 
 {{ if not .full -}}
@@ -11,6 +13,8 @@
 .config/nvim
 .config/bat
 .config/btop
+# tms needs fzf, which comes from mise
+.local/bin/tms
 {{- end }}
 
 {{ if ne .chezmoi.os "darwin" -}}

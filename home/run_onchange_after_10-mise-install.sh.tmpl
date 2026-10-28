@@ -5,9 +5,46 @@
 set -eu
 export PATH="$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
 
+# mise from GitHub releases, checksum-verified. Used when mise.run is
+# unreachable (it's blocked on the Centene network; github.com isn't).
+install_mise_from_github() {
+    case "$(uname -s)" in Linux) os=linux ;; *) return 1 ;; esac
+    case "$(uname -m)" in
+        x86_64) arch=x64 ;;
+        aarch64 | arm64) arch=arm64 ;;
+        *) return 1 ;;
+    esac
+    if ldd --version 2>&1 | grep -qi musl; then arch="$arch-musl"; fi
+
+    base=https://github.com/jdx/mise/releases
+    tag=$(curl -fsSLI -o /dev/null -w '%{url_effective}' --connect-timeout 10 "$base/latest") || return 1
+    tag=${tag##*/}
+    case "$tag" in v[0-9]*) ;; *) return 1 ;; esac
+    asset="mise-$tag-$os-$arch.tar.gz"
+
+    tmp=$(mktemp -d)
+    curl -fsSL --connect-timeout 10 -o "$tmp/$asset" "$base/download/$tag/$asset" &&
+    curl -fsSL --connect-timeout 10 -o "$tmp/sums" "$base/download/$tag/SHASUMS256.txt" &&
+    (cd "$tmp" && grep "[ /]$asset\$" sums | sed "s|[^ ]*$asset\$|$asset|" | sha256sum -c - >/dev/null) &&
+    tar -xzf "$tmp/$asset" -C "$tmp" || { rm -rf "$tmp"; return 1; }
+
+    mkdir -p "$HOME/.local/bin"
+    mv "$tmp/mise/bin/mise" "$HOME/.local/bin/mise"
+    chmod +x "$HOME/.local/bin/mise"
+    rm -rf "$tmp"
+}
+
 if ! command -v mise >/dev/null 2>&1; then
-    curl -fsSL https://mise.run | sh
+    script=$(curl -fsSL --connect-timeout 10 https://mise.run 2>/dev/null) && [ -n "$script" ] &&
+        printf '%s\n' "$script" | sh ||
+        install_mise_from_github ||
+        { echo "mise: couldn't download it from mise.run or GitHub; skipping tool installs." >&2; exit 0; }
 fi
 
-MISE_YES=1 mise install
+# A tool that fails to download shouldn't abort the rest of chezmoi apply.
+# Fix the cause (often GitHub's API rate limit: set MISE_GITHUB_TOKEN), then
+# re-run `mise install` by hand.
+if ! MISE_YES=1 mise install; then
+    echo "mise: some tools failed to install. Fix the cause, then run: mise install" >&2
+fi
 {{ end -}}

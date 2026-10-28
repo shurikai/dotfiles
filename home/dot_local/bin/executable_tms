@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# tms: fuzzy-pick a project under ~/src and attach to (or create) its tmux
+# session. Inside tmux it switches sessions instead of nesting.
+# Projects are ~/src/<name> and ~/src/<group>/<name> git repos.
+# Override the root with TMS_ROOT.
+set -euo pipefail
+
+root="${TMS_ROOT:-$HOME/src}"
+[ -d "$root" ] || { echo "tms: $root does not exist" >&2; exit 1; }
+
+dir=$(
+    {
+        find "$root" -mindepth 1 -maxdepth 1 -type d ! -name '.*'
+        find "$root" -mindepth 2 -maxdepth 3 -type d -name .git -exec dirname {} \;
+    } | sort -u | fzf --prompt='project> ' --height=100% --reverse
+) || exit 0
+[ -n "$dir" ] || exit 0
+
+name=$(basename "$dir" | tr '.:' '__')
+tmux has-session -t "=$name" 2>/dev/null || tmux new-session -ds "$name" -c "$dir"
+
+if [ -n "${TMUX:-}" ]; then
+    tmux switch-client -t "=$name"
+else
+    tmux attach-session -t "=$name"
+fi

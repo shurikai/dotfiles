@@ -7,6 +7,15 @@
 .ssh
 {{- end }}
 
+{{ if eq .role "work" -}}
+# Client machines: bash instead of zsh, and no btop. Keeps the footprint small
+# on images you don't control.
+.zshrc
+.zprofile
+.zshenv
+.config/btop
+{{- end }}
+
 {{ if not .full -}}
 # Servers / the Proxmox host: shell, git, tmux. No toolchain, no full editor.
 .config/mise

@@ -1,7 +1,8 @@
 # Fetched by chezmoi itself, so they land in the same place on every OS
 # instead of wherever brew / apt / pacman / xbps put them.
 # Refreshed weekly on `chezmoi apply`, or now with `chezmoi apply --refresh-externals`.
-
+# Always rendered as a template. zsh plugins: not on `work`, which uses bash.
+{{ if ne .role "work" }}
 [".local/share/zsh/plugins/zsh-syntax-highlighting"]
     type = "archive"
     url = "https://github.com/zsh-users/zsh-syntax-highlighting/archive/refs/heads/master.tar.gz"
@@ -15,3 +16,4 @@
     stripComponents = 1
     exact = true
     refreshPeriod = "168h"
+{{ end }}

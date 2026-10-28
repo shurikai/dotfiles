@@ -15,13 +15,17 @@ is in a VM this week.
 Asked once per machine, cached in `~/.config/chezmoi/chezmoi.toml`.
 Change with `chezmoi init --prompt`.
 
-| Role | Machine | WezTerm + font | Toolchain + Neovim | tmux |
-|---|---|---|---|---|
-| `workstation` | MacBook Pro | yes | yes | yes |
-| `devbox` | Void dev box (headless) | no | yes | yes |
-| `work` | Coder workspace | no (VDI) | yes | yes, the main multiplexer |
-| `server` | Proxmox host, homelab | no | no | yes, from the distro |
-| `scratch` | Arch VMs, distro-hopping | no | yes | yes |
+| Role | Machine | Shell | WezTerm + font | Toolchain + Neovim | tmux |
+|---|---|---|---|---|---|
+| `workstation` | MacBook Pro | zsh | yes | yes | yes |
+| `devbox` | Void dev box (headless) | zsh | no | yes | yes |
+| `work` | Client machine (Coder) | bash, no btop | no (VDI) | yes | yes, the main multiplexer |
+| `server` | Proxmox host, homelab | zsh | no | no | yes, from the distro |
+| `scratch` | Arch VMs, distro-hopping | zsh | no | yes | yes |
+
+`~/.bashrc` is a full setup on every role (same aliases, fzf, mise and
+starship as zsh, minus the zsh-only plugins), so bash is always a usable
+fallback.
 
 ## Bootstrap: new MacBook Pro (clean install)
 
@@ -115,9 +119,16 @@ Set this repo as the workspace's dotfiles URL (or run
 `install.sh`, which picks `role=work`. If `env | grep ^CODER` shows nothing on
 your image, set `DOTFILES_ROLE=work` in the template or `~/personalize`.
 
-On Coder, `~/.bashrc` hands interactive shells to zsh, since `chsh` usually
-isn't allowed. If the repo is private, the workspace needs GitHub access
-through Coder's external auth.
+The `work` role uses bash: no zsh, zsh plugins or btop get installed, which
+keeps the footprint small on an image you don't control. If the repo is
+private, the workspace needs GitHub access through Coder's external auth.
+
+On locked-down networks, `install.sh` and the mise step download chezmoi and
+mise from GitHub releases when `get.chezmoi.io` / `mise.run` are blocked.
+SDKMAN is attempted once; if `get.sdkman.io` is blocked it prints how to
+install it later. If mise hits GitHub's API rate limit, put
+`export MISE_GITHUB_TOKEN=...` (a classic token, no scopes) in
+`~/.config/bash/local.bash` and run `mise install`.
 
 ## Multiplexing: WezTerm and tmux
 
@@ -144,7 +155,7 @@ Yanks use OSC 52, so they reach your local clipboard over SSH.
 | Track a new file | `chezmoi add ~/.config/foo/config` |
 | Pull changes from another machine | `chezmoi update` |
 | Go to the repo | `chezmoi cd` |
-| Machine-only shell bits | `~/.config/zsh/local.zsh` or `local.zprofile` (not in the repo) |
+| Machine-only shell bits | zsh: `~/.config/zsh/local.zsh` or `local.zprofile`; bash: `~/.config/bash/local.bash` (not in the repo) |
 | Machine-only git settings | `~/.config/git/local` (not in the repo) |
 
 **The Neovim rule:** run `:Lazy update` on one machine only and commit

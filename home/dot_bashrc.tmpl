@@ -1,15 +1,60 @@
-# Managed by chezmoi.
+# Managed by chezmoi: edit with `chezmoi edit ~/.bashrc`.
+# Role: {{ .role }}
+#
+# The interactive shell on `work` (Coder), and a usable fallback everywhere
+# else, e.g. a server before you've run chsh. Mirrors ~/.zshrc minus the
+# zsh-only plugins. Login shells get here through ~/.profile, which on
+# Debian/Ubuntu sources ~/.bashrc; this file doesn't manage ~/.profile.
 case $- in *i*) ;; *) return ;; esac
 
-{{ if eq .role "work" -}}
-# Coder workspaces often won't let you chsh. Hop into zsh for interactive
-# shells instead; ZSH_HANDOFF prevents a loop if zsh itself starts bash.
-if [ -z "${ZSH_HANDOFF:-}" ] && command -v zsh >/dev/null 2>&1; then
-    export ZSH_HANDOFF=1
-    exec zsh -l
-fi
-
-{{ end -}}
+# ---- Environment ---------------------------------------------------------------
 case ":$PATH:" in *":$HOME/.local/bin:"*) ;; *) PATH="$HOME/.local/bin:$PATH" ;; esac
 export PATH
+export EDITOR={{ if .full }}nvim{{ else }}vim{{ end }}
+export VISUAL=$EDITOR
+
+# ---- History -------------------------------------------------------------------
+HISTSIZE=50000
+HISTFILESIZE=50000
+HISTCONTROL=ignoreboth:erasedups
+shopt -s histappend checkwinsize
+
+# ---- Completion ----------------------------------------------------------------
+if ! shopt -oq posix && [ -z "${BASH_COMPLETION_VERSINFO:-}" ]; then
+    for f in /usr/share/bash-completion/bash_completion /etc/bash_completion; do
+        [ -f "$f" ] && . "$f" && break
+    done
+fi
+
+# ---- Toolchain -----------------------------------------------------------------
 command -v mise >/dev/null 2>&1 && eval "$(mise activate bash)"
+
+# ---- Aliases -------------------------------------------------------------------
+command -v eza >/dev/null 2>&1 && alias ls="eza --icons=always --git"
+command -v bat >/dev/null 2>&1 && alias cat='bat'
+
+# ---- fzf, with fd for candidates -----------------------------------------------
+if command -v fzf >/dev/null 2>&1; then
+    eval "$(fzf --bash)"
+
+    if command -v fd >/dev/null 2>&1; then
+        export FZF_DEFAULT_COMMAND="fd --hidden --strip-cwd-prefix --exclude .git"
+        export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
+        export FZF_ALT_C_COMMAND="fd --type=d --hidden --strip-cwd-prefix --exclude .git"
+        _fzf_compgen_path() { fd --hidden --exclude .git . "$1"; }
+        _fzf_compgen_dir()  { fd --type=d --hidden --exclude .git . "$1"; }
+    fi
+
+    # Same theme as ~/.zshrc. Due for a scrub along with everything else.
+    export FZF_DEFAULT_OPTS="--color=fg:#CBE0F0,bg:#011628,hl:#B388FF,fg+:#CBE0F0,bg+:#143652,hl+:#B388FF,info:#06BCE4,prompt:#2CF9ED,pointer:#2CF9ED,marker:#2CF9ED,spinner:#2CF9ED,header:#2CF9ED"
+fi
+
+# ---- Machine-local additions (not in the repo) ---------------------------------
+[ -f "$HOME/.config/bash/local.bash" ] && . "$HOME/.config/bash/local.bash"
+
+# ---- Prompt --------------------------------------------------------------------
+command -v starship >/dev/null 2>&1 && eval "$(starship init bash)"
+
+# ---- SDKMAN: must stay at the end of the file ----------------------------------
+export SDKMAN_DIR="$HOME/.sdkman"
+[ -s "$SDKMAN_DIR/bin/sdkman-init.sh" ] && . "$SDKMAN_DIR/bin/sdkman-init.sh"

@@ -1,9 +1,10 @@
-{{- /* Not on work: get.sdkman.io is blocked on the Centene network, and Java
-       comes from the workspace image there. */ -}}
-{{- if and .full (ne .role "work") -}}
+{{- if .full -}}
 #!/bin/sh
-# SDKMAN for Java. rcupdate=false: ~/.zshrc already sources it, so the
-# installer must not append to the managed rc files.
+# SDKMAN for Java. rcupdate=false: ~/.zshrc and ~/.bashrc already source it,
+# so the installer must not append to the managed rc files.
+#
+# Where get.sdkman.io is blocked (Centene), this prints how to install it
+# later and doesn't retry: run_once records the run either way.
 set -eu
 if [ ! -s "$HOME/.sdkman/bin/sdkman-init.sh" ]; then
     # Download first: a failed `curl | bash` would look like success.

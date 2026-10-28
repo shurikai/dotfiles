@@ -1,7 +1,18 @@
 {{- if eq .chezmoi.os "linux" -}}
+{{- /* Packages by role:
+       work:    the bare minimum (bash is the shell; tmux etc. come from mise)
+       server:  zsh + tmux from the distro (servers don't get mise)
+       others:  zsh, btop and a C toolchain for treesitter parsers */ -}}
+{{- $pkgs := "git curl unzip zip" -}}
+{{- $build := "" -}}
+{{- if eq .role "server" -}}
+{{-   $pkgs = printf "%s zsh tmux" $pkgs -}}
+{{- else if ne .role "work" -}}
+{{-   $pkgs = printf "%s zsh btop" $pkgs -}}
+{{-   $build = "yes" -}}
+{{- end -}}
 #!/bin/sh
-# Base packages from the distro: git, curl, unzip, zip (SDKMAN), zsh, and
-# {{ if .full }}a C toolchain (treesitter parsers) plus btop{{ else }}tmux (servers don't get mise){{ end }}.
+# Base packages from the distro ({{ .role }}): {{ $pkgs }}{{ if $build }} + C toolchain{{ end }}.
 # Never blocks: if sudo needs a password or isn't allowed (Coder), it prints
 # what's missing and carries on.
 set -eu
@@ -14,24 +25,21 @@ elif sudo -n true 2>/dev/null; then
 elif [ -t 0 ]; then
     SUDO="sudo"
 else
-    echo "prereqs: no non-interactive sudo; install git curl unzip zip zsh yourself if missing." >&2
+    echo "prereqs: no non-interactive sudo; install these yourself if missing: {{ $pkgs }}" >&2
     exit 0
 fi
 
-{{- $extra := "tmux" }}
-{{- if .full }}{{ $extra = "btop" }}{{ end }}
-
 case " ${ID:-} ${ID_LIKE:-} " in
     *" void "*)
-        $SUDO xbps-install -Sy git curl unzip zip zsh {{ $extra }}{{ if .full }} gcc make{{ end }} ;;
+        $SUDO xbps-install -Sy {{ $pkgs }}{{ if $build }} gcc make{{ end }} ;;
     *" arch "*)
-        $SUDO pacman -Syu --needed --noconfirm git curl unzip zip zsh {{ $extra }}{{ if .full }} base-devel{{ end }} ;;
+        $SUDO pacman -Syu --needed --noconfirm {{ $pkgs }}{{ if $build }} base-devel{{ end }} ;;
     *" debian "* | *" ubuntu "*)
         $SUDO apt-get update
-        $SUDO apt-get install -y git curl unzip zip zsh {{ $extra }}{{ if .full }} build-essential{{ end }} ;;
+        $SUDO apt-get install -y {{ $pkgs }}{{ if $build }} build-essential{{ end }} ;;
     *" fedora "* | *" rhel "*)
-        $SUDO dnf install -y git curl unzip zip zsh {{ $extra }}{{ if .full }} gcc make{{ end }} ;;
+        $SUDO dnf install -y {{ $pkgs }}{{ if $build }} gcc make{{ end }} ;;
     *)
-        echo "prereqs: unrecognized distro '${ID:-?}'. Install git curl unzip zip zsh {{ $extra }} yourself." >&2 ;;
+        echo "prereqs: unrecognized distro '${ID:-?}'. Install yourself: {{ $pkgs }}" >&2 ;;
 esac
 {{ end -}}

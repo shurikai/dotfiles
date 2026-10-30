@@ -35,3 +35,12 @@ uv = "latest"
 
 # Go tooling that conform.nvim calls on save
 "go:golang.org/x/tools/cmd/goimports" = "latest"
+{{- if .client }}
+
+[settings]
+# mise looks up versions through its own server (mise-versions.jdx.dev) by
+# default. Client networks can silently drop it, which costs three 20s
+# timeouts per tool. Ask GitHub directly instead. That uses GitHub's API rate
+# limit, so set MISE_GITHUB_TOKEN in ~/.config/bash/local.bash if mise hits it.
+use_versions_host = false
+{{- end }}

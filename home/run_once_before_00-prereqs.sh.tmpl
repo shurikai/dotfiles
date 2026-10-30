@@ -1,13 +1,13 @@
 {{- if eq .chezmoi.os "linux" -}}
 {{- /* Packages by role:
-       work:    the bare minimum (bash is the shell; tmux etc. come from mise)
+       client:  the bare minimum (bash is the shell; tmux etc. come from mise)
        server:  zsh + tmux from the distro (servers don't get mise)
        others:  zsh, btop and a C toolchain for treesitter parsers */ -}}
 {{- $pkgs := "git curl unzip zip" -}}
 {{- $build := "" -}}
 {{- if eq .role "server" -}}
 {{-   $pkgs = printf "%s zsh tmux" $pkgs -}}
-{{- else if ne .role "work" -}}
+{{- else if not .client -}}
 {{-   $pkgs = printf "%s zsh btop" $pkgs -}}
 {{-   $build = "yes" -}}
 {{- end -}}

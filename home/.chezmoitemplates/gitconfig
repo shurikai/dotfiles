@@ -1,0 +1,28 @@
+# Managed by chezmoi (shared template: home/.chezmoitemplates/gitconfig).
+# Own machines: written to ~/.gitconfig. Client machines: written to
+# ~/.config/git/config instead, which git also reads, so the client's
+# ~/.gitconfig (proxies, CA bundles, credential helpers) stays theirs and
+# wins where the two disagree.
+[user]
+	name = Jason Chestnut
+{{- if .email }}
+	email = {{ .email }}
+{{- end }}
+[init]
+	defaultBranch = main
+[core]
+	editor = {{ if .full }}nvim{{ else }}vim{{ end }}
+[color]
+	ui = true
+[credential "https://github.com"]
+	useHttpPath = true
+{{- if or .full (eq .chezmoi.os "darwin") }}
+[filter "lfs"]
+	clean = git-lfs clean -- %f
+	smudge = git-lfs smudge -- %f
+	process = git-lfs filter-process
+	required = true
+{{- end }}
+# Machine-local overrides kept out of the repo (work signing keys, etc.)
+[include]
+	path = ~/.config/git/local

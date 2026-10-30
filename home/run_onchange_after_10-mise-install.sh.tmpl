@@ -6,7 +6,7 @@ set -eu
 export PATH="$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
 
 # mise from GitHub releases, checksum-verified. Used when mise.run is
-# unreachable (it's blocked on the Centene network; github.com isn't).
+# unreachable (blocked on some client networks that still allow github.com).
 install_mise_from_github() {
     case "$(uname -s)" in Linux) os=linux ;; *) return 1 ;; esac
     case "$(uname -m)" in

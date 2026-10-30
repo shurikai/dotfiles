@@ -1,9 +1,9 @@
 {{- if .full -}}
 #!/bin/sh
-# SDKMAN for Java. rcupdate=false: ~/.zshrc and ~/.bashrc already source it,
+# SDKMAN for Java. rcupdate=false: ~/.zshrc and ~/.config/bash/personal.bash source it,
 # so the installer must not append to the managed rc files.
 #
-# Where get.sdkman.io is blocked (Centene), this prints how to install it
+# Where get.sdkman.io is blocked (some client networks), this prints how to install it
 # later and doesn't retry: run_once records the run either way.
 set -eu
 if [ ! -s "$HOME/.sdkman/bin/sdkman-init.sh" ]; then

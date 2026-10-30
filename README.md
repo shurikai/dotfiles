@@ -1,8 +1,8 @@
 # dotfiles
 
-One repo for every machine: the Mac, the Void dev box, the Centene Coder
-workspace (reached only through VDI), the Proxmox homelab, and whatever distro
-is in a VM this week.
+One repo for every machine: the Mac, the Void dev box, client Coder
+workspaces (often reached only through VDI), the Proxmox homelab, and whatever
+distro is in a VM this week.
 
 - **chezmoi** places files and templates out per-machine differences.
 - **mise** installs the CLI toolchain into `$HOME` at the same versions on
@@ -19,13 +19,14 @@ Change with `chezmoi init --prompt`.
 |---|---|---|---|---|---|
 | `workstation` | MacBook Pro | zsh | yes | yes | yes |
 | `devbox` | Void dev box (headless) | zsh | no | yes | yes |
-| `work` | Client machine (Coder) | bash, no btop | no (VDI) | yes | yes, the main multiplexer |
+| `work` | Client machine (Coder) | bash, layered on the client's | no (VDI) | yes, minus runtimes the image ships | yes, the main multiplexer |
 | `server` | Proxmox host, homelab | zsh | no | no | yes, from the distro |
 | `scratch` | Arch VMs, distro-hopping | zsh | no | yes | yes |
 
-`~/.bashrc` is a full setup on every role (same aliases, fzf, mise and
-starship as zsh, minus the zsh-only plugins), so bash is always a usable
-fallback.
+The bash setup lives in `~/.config/bash/personal.bash` (same aliases, fzf,
+mise and starship as zsh, minus the zsh-only plugins), so bash is a usable
+fallback on every role. On your own machines `~/.bashrc` is a stub that
+sources it; on client machines see [Client machines](#client-machines).
 
 ## Bootstrap: new MacBook Pro (clean install)
 
@@ -119,9 +120,9 @@ Set this repo as the workspace's dotfiles URL (or run
 `install.sh`, which picks `role=work`. If `env | grep ^CODER` shows nothing on
 your image, set `DOTFILES_ROLE=work` in the template or `~/personalize`.
 
-The `work` role uses bash: no zsh, zsh plugins or btop get installed, which
-keeps the footprint small on an image you don't control. If the repo is
-private, the workspace needs GitHub access through Coder's external auth.
+The `work` role sets the `client` flag; see [Client machines](#client-machines)
+for what that changes. If the repo is private, the workspace needs GitHub
+access through Coder's external auth.
 
 On locked-down networks, `install.sh` and the mise step download chezmoi and
 mise from GitHub releases when `get.chezmoi.io` / `mise.run` are blocked.
@@ -129,6 +130,39 @@ SDKMAN is attempted once; if `get.sdkman.io` is blocked it prints how to
 install it later. If mise hits GitHub's API rate limit, put
 `export MISE_GITHUB_TOKEN=...` (a classic token, no scopes) in
 `~/.config/bash/local.bash` and run `mise install`.
+
+## Client machines
+
+A client's image already has a shell setup worth keeping: their aliases,
+helper functions, proxy settings and runtimes. On the `work` role (data flag
+`client`), this repo layers on top of that instead of replacing it:
+
+- **`~/.bashrc` stays theirs.** On every apply,
+  `run_after_50-client-bashrc-hook.sh.tmpl` makes sure it ends with one marked
+  block (`# >>> shurikai/dotfiles >>>`) that sources
+  `~/.config/bash/personal.bash`. Their setup loads first; yours layers on top.
+  If an image rebuild regenerates the file, the next start puts the block back.
+- **`~/.gitconfig` stays theirs.** Your git settings go to
+  `~/.config/git/config`, which git reads as well. Where both set something,
+  theirs wins. Put the client email in `~/.config/git/local`.
+- **Their runtimes are used.** mise skips Go; the image's Go and its module
+  proxy stay in charge.
+- No zsh, zsh plugins or btop.
+
+Client-specific settings (work email, extra aliases for their services) go in
+untracked files: `~/.config/bash/local.bash` and `~/.config/git/local`.
+Nothing about a particular client belongs in this repo.
+
+Every client rule is keyed off the flag, so `grep -rn '\.client' home/` lists
+all of it. To change how clients work, or to drop the behavior from the repo,
+that's the full list of places to edit.
+
+**Upgrading a workspace set up by an older version of this repo**, which
+replaced `~/.bashrc` and `~/.gitconfig` outright: the hook notices the old
+chezmoi-written `~/.bashrc`, saves it as `~/.bashrc.chezmoi-old`, and restores
+`~/pre-chezmoi/.bashrc` (or `/etc/skel/.bashrc` if there's no backup) before
+adding the block. `~/.gitconfig` is left as is; if you have a
+`~/pre-chezmoi/.gitconfig`, copy it back by hand.
 
 ## Multiplexing: WezTerm and tmux
 
@@ -155,6 +189,7 @@ Yanks use OSC 52, so they reach your local clipboard over SSH.
 | Track a new file | `chezmoi add ~/.config/foo/config` |
 | Pull changes from another machine | `chezmoi update` |
 | Go to the repo | `chezmoi cd` |
+| Edit the bash setup | `chezmoi edit ~/.config/bash/personal.bash` |
 | Machine-only shell bits | zsh: `~/.config/zsh/local.zsh` or `local.zprofile`; bash: `~/.config/bash/local.bash` (not in the repo) |
 | Machine-only git settings | `~/.config/git/local` (not in the repo) |
 

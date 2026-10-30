@@ -32,3 +32,8 @@ sourceDir = {{ .chezmoi.workingTree | quote }}
     full = {{ ne $role "server" }}
     # trusted: OK to pull personal secrets later (password manager, SSH config)
     trusted = {{ has $role (list "workstation" "devbox") }}
+    # client: someone else's machine (a client's Coder image). Layer on top of
+    # their setup: never take over ~/.bashrc or ~/.gitconfig, and use the
+    # runtimes their image ships. Everything client-specific in this repo is
+    # keyed off this flag, so `grep -rn '\.client' home/` finds all of it.
+    client = {{ eq $role "work" }}

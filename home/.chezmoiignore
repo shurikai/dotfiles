@@ -1,19 +1,27 @@
 {{- /* TARGET paths (as they appear in $HOME). Rendered as a template. */ -}}
 
 {{ if ne .role "workstation" -}}
-# WezTerm only where it can run: the Mac. Not on the Centene VDI path.
+# WezTerm only where it can run: the Mac. Not on clients reached through VDI.
 .config/wezterm
 # SSH client config (devbox alias etc.) is for the Mac only.
 .ssh
 {{- end }}
 
-{{ if eq .role "work" -}}
+{{ if .client -}}
 # Client machines: bash instead of zsh, and no btop. Keeps the footprint small
 # on images you don't control.
 .zshrc
 .zprofile
 .zshenv
 .config/btop
+# The client owns these. personal.bash is hooked into their ~/.bashrc by
+# run_after_50-client-bashrc-hook.sh.tmpl; git settings go to
+# ~/.config/git/config instead.
+.bashrc
+.gitconfig
+{{- else -}}
+# Own machines: git settings live in ~/.gitconfig.
+.config/git/config
 {{- end }}
 
 {{ if not .full -}}

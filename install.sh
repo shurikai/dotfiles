@@ -28,7 +28,7 @@ if [ -z "$role" ] && [ -n "${CODER:-}${CODER_WORKSPACE_NAME:-}" ]; then
 fi
 
 # Linux x86_64: fetch the release binary straight from GitHub. Corporate
-# networks that block get.chezmoi.io (Centene) often still allow github.com.
+# networks that block get.chezmoi.io often still allow github.com.
 # Verified against the release's checksums file.
 install_chezmoi_from_github() {
     [ "$(uname -s)" = Linux ] && [ "$(uname -m)" = x86_64 ] || return 1

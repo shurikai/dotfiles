@@ -1,0 +1,58 @@
+{{- if .client -}}
+#!/bin/sh
+# Client machines only. Leaves the client's ~/.bashrc in place and appends one
+# marked block that sources ~/.config/bash/personal.bash, so their aliases and
+# functions load first and your setup layers on top.
+#
+# Runs on every apply (Coder re-runs install.sh on each start), so the block
+# comes back if an image rebuild regenerates ~/.bashrc. Idempotent.
+set -eu
+
+rc="$HOME/.bashrc"
+begin='# >>> shurikai/dotfiles >>>'
+
+# Older versions of this repo replaced ~/.bashrc outright on the work role.
+# If that file is still there, put the image's version back first.
+if [ -f "$rc" ] && head -n 1 "$rc" | grep -q '^# Managed by chezmoi'; then
+    old="$rc.chezmoi-old"
+    mv "$rc" "$old"
+    restored=""
+    for src in "$HOME/pre-chezmoi/.bashrc" /etc/skel/.bashrc; do
+        if [ -f "$src" ]; then
+            cp "$src" "$rc"
+            restored=$src
+            break
+        fi
+    done
+    if [ -n "$restored" ]; then
+        echo "client-bashrc: restored ~/.bashrc from $restored (previous one saved as $old)"
+    else
+        echo "client-bashrc: no original ~/.bashrc to restore (checked ~/pre-chezmoi and /etc/skel);" >&2
+        echo "               starting a new one. Previous one saved as $old" >&2
+    fi
+fi
+
+if [ -f "$rc" ] && grep -qF "$begin" "$rc"; then
+    exit 0
+fi
+
+# Separate from whatever is above, even if the file lacks a final newline.
+[ -s "$rc" ] && [ -n "$(tail -c 1 "$rc")" ] && echo >> "$rc"
+cat >> "$rc" <<'EOF'
+
+# >>> shurikai/dotfiles >>>
+# Personal shell setup, layered on top of this machine's own config.
+# Delete this block to turn it off.
+[ -f "$HOME/.config/bash/personal.bash" ] && . "$HOME/.config/bash/personal.bash"
+# <<< shurikai/dotfiles <<<
+EOF
+echo "client-bashrc: added the personal.bash hook to ~/.bashrc"
+
+# bash login shells read ~/.bash_profile instead of ~/.profile when it exists.
+# If it doesn't pull in ~/.bashrc, ssh sessions won't see the hook.
+bp="$HOME/.bash_profile"
+if [ -f "$bp" ] && ! grep -q 'bashrc' "$bp"; then
+    echo "client-bashrc: ~/.bash_profile doesn't source ~/.bashrc, so login shells (ssh)" >&2
+    echo "               may skip your setup. Add this line to it:  [ -f ~/.bashrc ] && . ~/.bashrc" >&2
+fi
+{{ end -}}

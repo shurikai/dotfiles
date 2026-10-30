@@ -22,7 +22,10 @@ eza = "latest"
 {{- end }}
 
 # Languages (Java comes from SDKMAN, not mise)
+{{- if not .client }}
+# Client images ship their own Go, wired to their module proxy; use that one.
 go = "latest"
+{{- end }}
 node = "lts"        # runtime for npm-distributed language servers (Mason)
 uv = "latest"
 

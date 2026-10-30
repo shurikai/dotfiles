@@ -48,7 +48,7 @@ sources it; on client machines see [Client machines](#client-machines).
    - downloads zsh-syntax-highlighting and zsh-autosuggestions
    - runs `mise install` (Neovim, starship, tmux, fzf, fd, ripgrep, bat, Go, Node, ...)
    - installs SDKMAN
-   - restores Neovim plugins from `nvim/lazy-lock.json`
+   - restores Neovim plugins from `nvim/nvim-pack-lock.json`
 5. Open **WezTerm**, then `sdk install java <version>` for whatever the
    current engagement needs.
 
@@ -206,9 +206,11 @@ Yanks use OSC 52, so they reach your local clipboard over SSH.
 | Machine-only shell bits | zsh: `~/.config/zsh/local.zsh` or `local.zprofile`; bash: `~/.config/bash/local.bash` (not in the repo) |
 | Machine-only git settings | `~/.config/git/local` (not in the repo) |
 
-**The Neovim rule:** run `:Lazy update` on one machine only and commit
-`nvim/lazy-lock.json`. Everywhere else, `chezmoi update` pulls it and the
-restore script moves plugins to exactly those revisions.
+**The Neovim rule:** run `:lua vim.pack.update()` (review, then `:write`) on
+one machine only and commit `nvim/nvim-pack-lock.json`. Everywhere else,
+`chezmoi update` pulls it and the restore script moves plugins to exactly
+those revisions. Language servers and formatters come from mise, not from
+inside Neovim: add them to `home/dot_config/mise/config.toml.tmpl`.
 
 **Versions:** Neovim is pinned in `home/dot_config/mise/config.toml.tmpl`.
 The rest float on `latest`; pin one the day it surprises you.

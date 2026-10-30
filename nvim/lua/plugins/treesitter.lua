@@ -1,145 +1,103 @@
--- All treesitter-related configuration is kept here.
---   - Treesitter
---   - Treesitter Text Objects
+-- nvim-treesitter (main branch) only installs parsers and queries now.
+-- Highlighting is Neovim's own (vim.treesitter.start), enabled per buffer below.
+-- Compiling parsers needs the tree-sitter CLI (from mise) and a C compiler;
+-- without them, Neovim's bundled parsers (lua, vim, vimdoc, markdown, ...) and
+-- regex syntax still work.
+local M = {}
 
-return {
-  'nvim-treesitter/nvim-treesitter',
-  build = ':TSUpdate',
-  -- main = "nvim-treesitter.configs", -- Sets main module to use for opts
-  dependencies = {
-    'nvim-treesitter/nvim-treesitter-textobjects',
-  },
-  config = function()
-    local ts = require 'nvim-treesitter.configs'
-    ---@diagnostic disable-next-line: missing-fields
-    ts.setup {
-      ensure_installed = {
-        'bash',
-        'diff',
-        'go',
-        'html',
-        'http',
-        'java',
-        'javascript',
-        'lua',
-        'luadoc',
-        'markdown',
-        'markdown_inline',
-        'prisma',
-        'python',
-        'query',
-        'typescript',
-        'vim',
-        'vimdoc',
-      },
-      -- Autoinstall languages that are not installed
-      auto_install = false,
-      highlight = {
-        enable = true,
-        -- Some languages depend on vim's regex highlighting system (such as Ruby) for indent rules.
-        --  If you are experiencing weird indenting issues, add the language to
-        --  the list of additional_vim_regex_highlighting and disabled languages for indent.
-        additional_vim_regex_highlighting = true,
-      },
-      indent = { enable = true, disable = { 'ruby' } },
-      textobjects = {
-        select = {
-          enable = true,
-
-          -- Automatically jump forward to textobj, similar to targets.vim
-          lookahead = true,
-
-          keymaps = {
-            -- You can use the capture groups defined in textobjects.scm
-            ['af'] = '@function.outer',
-            ['if'] = '@function.inner',
-            ['ac'] = '@class.outer',
-            -- You can optionally set descriptions to the mappings (used in the desc parameter of
-            -- nvim_buf_set_keymap) which plugins like which-key display
-            ['ic'] = { query = '@class.inner', desc = 'Select inner part of a class region' },
-            -- You can also use captures from other query groups like `locals.scm`
-            ['as'] = { query = '@scope', query_group = 'locals', desc = 'Select language scope' },
-          },
-          -- You can choose the select mode (default is charwise 'v')
-          --
-          -- Can also be a function which gets passed a table with the keys
-          -- * query_string: eg '@function.inner'
-          -- * method: eg 'v' or 'o'
-          -- and should return the mode ('v', 'V', or '<c-v>') or a table
-          -- mapping query_strings to modes.
-          selection_modes = {
-            ['@parameter.outer'] = 'v', -- charwise
-            ['@function.outer'] = 'V', -- linewise
-            ['@class.outer'] = '<c-v>', -- blockwise
-          },
-          -- If you set this to `true` (default is `false`) then any textobject is
-          -- extended to include preceding or succeeding whitespace. Succeeding
-          -- whitespace has priority in order to act similarly to eg the built-in
-          -- `ap`.
-          --
-          -- Can also be a function which gets passed a table with the keys
-          -- * query_string: eg '@function.inner'
-          -- * selection_mode: eg 'v'
-          -- and should return true or false
-          include_surrounding_whitespace = true,
-        },
-        swap = {
-          enable = true,
-          swap_next = {
-            ['<leader>a'] = '@parameter.inner',
-          },
-          swap_previous = {
-            ['<leader>A'] = '@parameter.inner',
-          },
-        },
-        move = {
-          enable = true,
-          set_jumps = true, -- whether to set jumps in the jumplist
-          goto_next_start = {
-            [']m'] = '@function.outer',
-            [']]'] = { query = '@class.outer', desc = 'Next class start' },
-            --
-            -- You can use regex matching (i.e. lua pattern) and/or pass a list in a "query" key to group multiple queries.
-            [']o'] = '@loop.*',
-            -- ["]o"] = { query = { "@loop.inner", "@loop.outer" } }
-            --
-            -- You can pass a query group to use query from `queries/<lang>/<query_group>.scm file in your runtime path.
-            -- Below example nvim-treesitter's `locals.scm` and `folds.scm`. They also provide highlights.scm and indent.scm.
-            [']s'] = { query = '@scope', query_group = 'locals', desc = 'Next scope' },
-            [']z'] = { query = '@fold', query_group = 'folds', desc = 'Next fold' },
-          },
-          goto_next_end = {
-            [']M'] = '@function.outer',
-            [']['] = '@class.outer',
-          },
-          goto_previous_start = {
-            ['[m'] = '@function.outer',
-            ['[['] = '@class.outer',
-          },
-          goto_previous_end = {
-            ['[M'] = '@function.outer',
-            ['[]'] = '@class.outer',
-          },
-          -- Below will go to either the start or the end, whichever is closer.
-          -- Use if you want more granular movements
-          -- Make it even more gradual by adding multiple queries and regex.
-          goto_next = {
-            [']d'] = '@conditional.outer',
-          },
-          goto_previous = {
-            ['[d'] = '@conditional.outer',
-          },
-        },
-        lsp_interop = {
-          enable = true,
-          border = 'none',
-          floating_preview_opts = {},
-          peek_definition_code = {
-            ['<leader>df'] = '@function.outer',
-            ['<leader>dF'] = '@class.outer',
-          },
-        },
-      },
-    }
-  end,
+M.parsers = {
+  'bash',
+  'diff',
+  'go',
+  'html',
+  'http',
+  'java',
+  'javascript',
+  'lua',
+  'luadoc',
+  'markdown',
+  'markdown_inline',
+  'prisma',
+  'python',
+  'query',
+  'typescript',
+  'vim',
+  'vimdoc',
 }
+
+if vim.fn.executable 'tree-sitter' == 1 and vim.fn.executable 'cc' == 1 then
+  require('nvim-treesitter').install(M.parsers) -- async, no-op when installed
+end
+
+vim.api.nvim_create_autocmd('FileType', {
+  group = vim.api.nvim_create_augroup('treesitter-start', { clear = true }),
+  callback = function(ev)
+    if pcall(vim.treesitter.start, ev.buf) then
+      vim.bo[ev.buf].indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
+    end
+  end,
+})
+
+-- [[ Text objects ]] --
+require('nvim-treesitter-textobjects').setup {
+  select = {
+    -- Automatically jump forward to textobj, similar to targets.vim
+    lookahead = true,
+    selection_modes = {
+      ['@parameter.outer'] = 'v', -- charwise
+      ['@function.outer'] = 'V', -- linewise
+      ['@class.outer'] = '<c-v>', -- blockwise
+    },
+    include_surrounding_whitespace = true,
+  },
+  move = {
+    set_jumps = true, -- whether to set jumps in the jumplist
+  },
+}
+
+local move = require 'nvim-treesitter-textobjects.move'
+local select = require 'nvim-treesitter-textobjects.select'
+local swap = require 'nvim-treesitter-textobjects.swap'
+
+for lhs, query in pairs {
+  af = '@function.outer',
+  ['if'] = '@function.inner',
+  ac = '@class.outer',
+  ic = '@class.inner',
+} do
+  vim.keymap.set({ 'x', 'o' }, lhs, function()
+    select.select_textobject(query, 'textobjects')
+  end, { desc = 'TS select ' .. query })
+end
+vim.keymap.set({ 'x', 'o' }, 'as', function()
+  select.select_textobject('@local.scope', 'locals')
+end, { desc = 'TS select scope' })
+
+vim.keymap.set('n', '<leader>a', function()
+  swap.swap_next '@parameter.inner'
+end, { desc = 'TS swap with next parameter' })
+vim.keymap.set('n', '<leader>A', function()
+  swap.swap_previous '@parameter.inner'
+end, { desc = 'TS swap with previous parameter' })
+
+-- ]d/[d are left to diagnostics (Neovim's defaults).
+for lhs, args in pairs {
+  [']m'] = { 'goto_next_start', '@function.outer' },
+  [']]'] = { 'goto_next_start', '@class.outer' },
+  [']o'] = { 'goto_next_start', { '@loop.inner', '@loop.outer' } },
+  [']s'] = { 'goto_next_start', '@local.scope', 'locals' },
+  [']z'] = { 'goto_next_start', '@fold', 'folds' },
+  [']M'] = { 'goto_next_end', '@function.outer' },
+  [']['] = { 'goto_next_end', '@class.outer' },
+  ['[m'] = { 'goto_previous_start', '@function.outer' },
+  ['[['] = { 'goto_previous_start', '@class.outer' },
+  ['[M'] = { 'goto_previous_end', '@function.outer' },
+  ['[]'] = { 'goto_previous_end', '@class.outer' },
+} do
+  local fn, query, group = args[1], args[2], args[3] or 'textobjects'
+  vim.keymap.set({ 'n', 'x', 'o' }, lhs, function()
+    move[fn](query, group)
+  end, { desc = 'TS ' .. fn:gsub('_', ' ') .. ' ' .. vim.inspect(query) })
+end
+
+return M

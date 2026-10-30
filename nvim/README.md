@@ -1,43 +1,32 @@
 # Neovim Config
 
-## Structure
-- Custom plugin-like code in lua/stickies etc
+Needs Neovim 0.12+ (`vim.pack`). mise pins the version; see
+`home/dot_config/mise/config.toml.tmpl`.
 
-## Neovim Load Order
-1. init.lua
-2. plugin/init.lua and plugin/\*.lua
-3. lua/plugin/init.lua - loaded by Lazy
-4. lua/plugin/\*.lua - loaded by Lazy
-
-## Configuration Roadmap:
-1. Load init.lua
-    1. Bootstrap Lazy
-    2. Handle any up-front configuration
-2. Automatically load plugin/
-    1. Keymaps
-    2. Options
-    3. Autocmds
-3. Let Lazy load the plugins in lua/plugins
-4. Automatically load custom code in after/plugin and after/ftplugin
+## Layout
+- `init.lua`: sets the leader, lists every plugin in one `vim.pack.add()`, then
+  loads each `lua/plugins/*.lua`.
+- `nvim-pack-lock.json`: exact plugin revisions. Committed.
+- `lua/plugins/*.lua`: one file per plugin (or group of plugins), just its setup.
+- `plugin/*.lua`: options, keymaps, autocmds and LSP. Neovim sources these
+  after `init.lua`.
+- `lsp/<server>.lua`: per-server overrides, merged over nvim-lspconfig's defaults.
 
 ## Plugins
-[X] zenbones
-[X] lualine
-[X] mini
-[X] snacks
-[X] treesitter
-[X] gitsigns
-[ ] diffview
-[X] nvim-lspconfig
-[X] Mason
-[X] mason-lspconfig
-[X] mason-tool-installer
-[X] none-ls
-[X] navic
-[X] trouble
-[X] nvim colorizer
-[ ] rainbow-delimeters
-[X] lazydev
-[X] blink
-[ ] conform?
-[ ] dap, dap-ui, dap-virtual-text
+- Add: put it in the `vim.pack.add()` list in `init.lua`, add a
+  `lua/plugins/<name>.lua` if it needs setup, restart.
+- Update: `:lua vim.pack.update()`, review, `:write` to apply. Commit the lockfile.
+- Remove: delete it from `init.lua`, restart, `:lua vim.pack.del { '<name>' }`.
+
+## Language servers and tools
+Installed by mise, not from inside Neovim (no Mason). To add a server:
+1. Add its binary to the mise config and run `mise install`.
+2. Add its nvim-lspconfig name to `servers` in `plugin/lsp.lua`.
+3. Optional: put overrides in `lsp/<name>.lua`.
+
+Servers that aren't installed are skipped, so the list can be the same everywhere.
+
+## Treesitter
+nvim-treesitter's `main` branch. Parsers compile locally, so they need the
+`tree-sitter` CLI (mise) and a C compiler. Without those, Neovim's bundled
+parsers and regex highlighting still work. Update parsers with `:TSUpdate`.

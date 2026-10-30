@@ -1,24 +1,30 @@
-{{- $lazyLock := joinPath .chezmoi.workingTree "nvim" "lazy-lock.json" -}}
+{{- $packLock := joinPath .chezmoi.workingTree "nvim" "nvim-pack-lock.json" -}}
 {{- if .full -}}
 #!/bin/sh
-# Puts Neovim plugins at exactly the revisions in the committed lockfile.
-# Re-runs whenever the lockfile changes, i.e. after you pull an update made
-# on another machine.
-# lockfile hash: {{ if stat $lazyLock }}{{ include $lazyLock | sha256sum }}{{ else }}none{{ end }}
+# Puts Neovim plugins at exactly the revisions in the committed lockfile and
+# installs treesitter parsers. Re-runs whenever the lockfile changes, i.e.
+# after you pull an update made on another machine.
+# lockfile hash: {{ if stat $packLock }}{{ include $packLock | sha256sum }}{{ else }}none{{ end }}
 set -eu
 export PATH="$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
 
-# Only mise's Neovim: the config needs the pinned version, and a distro nvim
-# found on PATH (often far older, e.g. apt's) can't run it.
+# Only mise's Neovim: the config needs the pinned version (vim.pack is 0.12+),
+# and a distro nvim found on PATH (often far older, e.g. apt's) can't run it.
 if ! command -v mise >/dev/null 2>&1 || ! mise which nvim >/dev/null 2>&1; then
     echo "nvim-restore: mise's Neovim isn't installed yet, skipping. After 'mise install' succeeds, run: chezmoi apply" >&2
     exit 0
 fi
 
+# Starting Neovim installs any plugin missing from disk at its lockfile
+# revision; the update moves already-installed ones to theirs. Parsers only
+# compile where the tree-sitter CLI and a C compiler exist.
 # A failure here shouldn't abort the rest of chezmoi apply.
-if [ -f "$HOME/.config/nvim/lazy-lock.json" ]; then
-    if ! mise exec -- nvim --headless '+Lazy! restore' +qa </dev/null; then
-        echo "nvim-restore: plugin restore failed. To see why, run:  nvim --headless '+Lazy! restore' +qa" >&2
+if [ -f "$HOME/.config/nvim/nvim-pack-lock.json" ]; then
+    if ! mise exec -- nvim --headless \
+        "+lua vim.pack.update(nil, { target = 'lockfile', force = true })" \
+        "+lua if vim.fn.executable('tree-sitter') == 1 and vim.fn.executable('cc') == 1 then require('nvim-treesitter').install(require('plugins.treesitter').parsers):wait(300000) end" \
+        +qa </dev/null; then
+        echo "nvim-restore: plugin restore failed. To see why, run:  nvim --headless \"+lua vim.pack.update(nil, { target = 'lockfile', force = true })\" +qa" >&2
     fi
 fi
 {{ end -}}

@@ -1,38 +1,70 @@
--- Bootstrap lazy.nvim
---    This will download and install the plugin manager if it isn't already
---    present, then configure it to use lua/plugins for plugin specs. It also
---    applies any configuration that is necessary to get started.
-local lazypath = vim.fn.stdpath 'data' .. '/lazy/lazy.nvim'
-if not (vim.uv or vim.loop).fs_stat(lazypath) then
-  local lazyrepo = 'https://github.com/folke/lazy.nvim.git'
-  local out = vim.fn.system { 'git', 'clone', '--filter=blob:none', '--branch=stable', lazyrepo, lazypath }
-  if vim.v.shell_error ~= 0 then
-    vim.api.nvim_echo({
-      { 'Failed to clone lazy.nvim:\n', 'ErrorMsg' },
-      { out, 'WarningMsg' },
-      { '\nPress any key to exit...' },
-    }, true, {})
-    vim.fn.getchar()
-    os.exit(1)
-  end
-end
-vim.opt.rtp:prepend(lazypath)
-
--- Make sure to setup 'mapleader' and 'maplocalleader' before loading and initializing lazy.nvim so that
--- mappings are correct after. This is also a good place to setup other settings in vim.opt, etc.
-
+-- Leader must be set before any plugin creates mappings.
 vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
 
--- Setup lazy.nvim
-require('lazy').setup {
-  spec = {
-    { import = 'plugins' },
-  },
-  -- Configure other lazy settings here. See the documentation for more details.
+-- Build steps after a plugin is installed or updated. Registered before
+-- vim.pack.add() so it also fires for installs from the lockfile.
+vim.api.nvim_create_autocmd('PackChanged', {
+  group = vim.api.nvim_create_augroup('pack-hooks', { clear = true }),
+  callback = function(ev)
+    local name, kind = ev.data.spec.name, ev.data.kind
+    if name == 'nvim-treesitter' and kind == 'update' then
+      if not ev.data.active then
+        vim.cmd.packadd 'nvim-treesitter'
+      end
+      vim.cmd 'TSUpdate'
+    end
+  end,
+})
 
-  -- The colorscheme that will be used when installing plugins.
-  install = { colorscheme = { 'habamax' } },
-  checker = { enabled = false, notify = false },
-  change_detection = { enabled = false },
+-- Plugins. Exact revisions live in nvim-pack-lock.json (committed).
+--   Update:  :lua vim.pack.update()       (review, then :write to apply)
+--   Remove:  delete it here, restart, :lua vim.pack.del { 'name' }
+local gh = function(repo)
+  return 'https://github.com/' .. repo
+end
+vim.pack.add {
+  -- Colorschemes
+  gh 'rebelot/kanagawa.nvim',
+  gh 'zenbones-theme/zenbones.nvim',
+  gh 'rktjmp/lush.nvim',
+  gh 'savq/melange-nvim',
+  gh 'jacksonludwig/vim-earl-grey',
+
+  -- UI
+  gh 'folke/snacks.nvim',
+  gh 'echasnovski/mini.nvim',
+  gh 'nvim-tree/nvim-web-devicons',
+  gh 'nvim-lualine/lualine.nvim',
+  gh 'SmiteshP/nvim-navic',
+  gh 'lewis6991/gitsigns.nvim',
+
+  -- Syntax
+  { src = gh 'nvim-treesitter/nvim-treesitter', version = 'main' },
+  { src = gh 'nvim-treesitter/nvim-treesitter-textobjects', version = 'main' },
+
+  -- LSP, completion, formatting. nvim-lspconfig only supplies server
+  -- defaults (its lsp/*.lua); servers are enabled in plugin/lsp.lua.
+  gh 'neovim/nvim-lspconfig',
+  gh 'folke/lazydev.nvim',
+  -- A release tag, so blink downloads its prebuilt fuzzy matcher (no cargo).
+  { src = gh 'saghen/blink.cmp', version = vim.version.range '1.*' },
+  gh 'rafamadriz/friendly-snippets',
+  gh 'stevearc/conform.nvim',
+
+  -- Debugging
+  gh 'mfussenegger/nvim-dap',
+  gh 'nvim-neotest/nvim-nio',
+  gh 'rcarriga/nvim-dap-ui',
+  gh 'theHamsta/nvim-dap-virtual-text',
 }
+
+require 'plugins.colorscheme'
+require 'plugins.snacks'
+require 'plugins.mini'
+require 'plugins.lualine'
+require 'plugins.gitsigns'
+require 'plugins.treesitter'
+require 'plugins.completion'
+require 'plugins.conform'
+require 'plugins.debugging'

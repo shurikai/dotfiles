@@ -1,4 +1,4 @@
-vim.cmd 'let g:netrw_liststyle = 3'
+vim.g.netrw_liststyle = 3
 vim.g.have_nerd_font = true
 
 vim.opt.number = true
@@ -36,8 +36,3 @@ vim.opt.foldlevel = 99
 vim.opt.foldlevelstart = 4
 vim.opt.foldnestmax = 4
 vim.opt.foldcolumn = 'auto'
-
-vim.fn.sign_define('DiagnosticSignError', { text = ' ', texthl = 'DiagnosticSignError' })
-vim.fn.sign_define('DiagnosticSignWarn', { text = ' ', texthl = 'DiagnosticSignWarn' })
-vim.fn.sign_define('DiagnosticSignInfo', { text = ' ', texthl = 'DiagnosticSignInfo' })
-vim.fn.sign_define('DiagnosticSignHint', { text = '󰌵', texthl = 'DiagnosticSignHint' })

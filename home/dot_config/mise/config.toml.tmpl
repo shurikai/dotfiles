@@ -26,15 +26,29 @@ eza = "latest"
 # Client images ship their own Go, wired to their module proxy; use that one.
 go = "latest"
 {{- end }}
-node = "lts"        # runtime for npm-distributed language servers (Mason)
+node = "lts"        # runtime for the npm-distributed language servers below
 {{- if not .client }}
 # Client images ship their own Python tooling. uv also fails there: mise
 # verifies its download against sigstore, which locked-down networks block.
 uv = "latest"
 {{- end }}
 
-# Go tooling that conform.nvim calls on save
-"go:golang.org/x/tools/cmd/goimports" = "latest"
+# Neovim: language servers, formatters, debug adapter, treesitter CLI.
+# Neovim finds them on PATH; nothing is installed from inside the editor.
+tree-sitter = "latest"          # nvim-treesitter compiles parsers with it
+lua-language-server = "latest"
+stylua = "latest"
+biome = "latest"
+"github:Feel-ix-343/markdown-oxide" = "latest"
+# ts_ls needs tsserver, which TypeScript 7 (native) no longer ships.
+"npm:typescript" = "6"
+"npm:typescript-language-server" = "latest"
+"npm:yaml-language-server" = "latest"
+"npm:@prisma/language-server" = "latest"
+"go:golang.org/x/tools/gopls" = "latest"
+"go:golang.org/x/tools/cmd/goimports" = "latest"   # conform.nvim, on save
+# nvim-dap's JS adapter; lua/plugins/debugging.lua finds it with `mise where`.
+"github:microsoft/vscode-js-debug" = { version = "latest", asset_pattern = "js-debug-dap-*.tar.gz" }
 {{- if .client }}
 
 [settings]

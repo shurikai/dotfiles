@@ -7,8 +7,8 @@ local opt = function(partial)
 end
 
 -- [[ Setup Leader Key ]] --
+-- mapleader itself is set in init.lua, before plugins load.
 keymap('', '<Space>', '<Nop>', opts)
-vim.g.mapleader = ' '
 
 -- [[ Normal Mode ]] --
 -- Resize window with arrow keys --
@@ -38,17 +38,21 @@ keymap('v', '<', '<gv', opts)
 keymap('v', '>', '>gv', opts)
 
 -- [[ LSP Navigation - Diagnostics ]] --
-vim.keymap.set('n', ']g', vim.diagnostic.goto_next, { desc = 'Go to next diagnostic line.' })
-vim.keymap.set('n', '[g', vim.diagnostic.goto_prev, { desc = 'Go to previous diagnostic line.' })
-vim.keymap.set('n', 'K', vim.lsp.buf.hover, { desc = 'LSP Hover' })
+-- Neovim already maps K (hover), ]d/[d (diagnostics) and grn/gra/grr/gri/grt/gO
+-- (rename, code action, references, implementation, type definition, symbols).
+vim.keymap.set('n', ']g', function()
+  vim.diagnostic.jump { count = 1, float = true }
+end, { desc = 'Go to next diagnostic line.' })
+vim.keymap.set('n', '[g', function()
+  vim.diagnostic.jump { count = -1, float = true }
+end, { desc = 'Go to previous diagnostic line.' })
 vim.keymap.set('n', '<leader>ld', vim.lsp.buf.definition, { desc = 'LSP [G]o to [D]efinition' })
 vim.keymap.set('n', '<leader>lD', vim.lsp.buf.declaration, { desc = 'LSP [G]o to [D]eclaration' })
 vim.keymap.set('n', '<leader>lr', vim.lsp.buf.references, { desc = 'LSP [G]o to [R]eferences' })
 vim.keymap.set({ 'n', 'v' }, '<leader>lc', vim.lsp.buf.code_action, { desc = '[L]SP [C]ode Actions' })
-vim.keymap.set('n', '<leader>lf', vim.lsp.buf.format, { desc = 'LSP [F]ormat Buffer' })
-
--- [[ Neogit ]] --
-vim.keymap.set('n', '<Leader>ng', ':Neogit<CR>', { desc = '[N]eo[g]it' })
+vim.keymap.set('n', '<leader>lf', function()
+  require('conform').format { lsp_format = 'fallback' }
+end, { desc = 'LSP [F]ormat Buffer' })
 
 -- [[ Snacks ]] --
 -- Buffers
@@ -174,9 +178,6 @@ end, opt { desc = 'Snacks Marks' })
 keymap('n', '<leader>sM', function()
   Snacks.picker.man()
 end, opt { desc = 'Snacks Man Pages' })
-keymap('n', '<leader>sp', function()
-  Snacks.picker.lazy()
-end, opt { desc = 'Snacks Search for Lazy Plugin Spec' })
 keymap('n', '<leader>sq', function()
   Snacks.picker.qflist()
 end, opt { desc = 'Snacks Quickfix List' })
@@ -196,9 +197,9 @@ end, opt { desc = 'Snacks Goto Definition' })
 keymap('n', 'gD', function()
   Snacks.picker.lsp_declarations()
 end, opt { desc = 'Snacks Goto Declaration' })
-keymap('n', 'gr', function()
+keymap('n', 'grr', function()
   Snacks.picker.lsp_references()
-end, opt { nowait = true, desc = 'Snacks LSP References' })
+end, opt { desc = 'Snacks LSP References' })
 keymap('n', 'gI', function()
   Snacks.picker.lsp_implementations()
 end, opt { desc = 'Snacks Goto Implementation' })
@@ -207,28 +208,10 @@ keymap('n', 'gy', function()
 end, opt { desc = 'Snacks Goto T[y]pe Definition' })
 keymap('n', '<leader>ss', function()
   Snacks.picker.lsp_symbols()
-end, opt { desc = 'Snakcs LSP Symbols' })
+end, opt { desc = 'Snacks LSP Symbols' })
 keymap('n', '<leader>sS', function()
   Snacks.picker.lsp_workspace_symbols()
-end, opt { desc = 'Snakcs LSP Workspace Symbols' })
-
--- [[ Trouble ]] --
-keymap('n', '<leader>xx', '<cmd>Trouble diagnostics toggle<cr>', opt { desc = 'Diagnostics (Trouble)' })
-keymap(
-  'n',
-  '<leader>xX',
-  '<cmd>Trouble diagnostics toggle filter.buf=0<cr>',
-  opt { desc = 'Buffer Diagnostics (Trouble)' }
-)
-keymap('n', '<leader>cs', '<cmd>Trouble symbols toggle focus=false<cr>', opt { desc = 'Symbols (Trouble)' })
-keymap(
-  'n',
-  '<leader>cl',
-  '<cmd>Trouble lsp toggle focus=false win.position=right<cr>',
-  opt { desc = 'LSP Definitions / references / ... (Trouble)' }
-)
-keymap('n', '<leader>xL', '<cmd>Trouble loclist toggle<cr>', opt { desc = 'Location List (Trouble)' })
-keymap('n', '<leader>xQ', '<cmd>Trouble qflist toggle<cr>', opt { desc = 'Quickfix List (Trouble)' })
+end, opt { desc = 'Snacks LSP Workspace Symbols' })
 
 -- [[ DAP ]] --
 vim.keymap.set('n', '<Leader>db', '<CMD>DapToggleBreakpoint <CR>', { desc = '[D]ebugger Toggle [B]reakpoint' })

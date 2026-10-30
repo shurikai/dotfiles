@@ -115,7 +115,10 @@ Projects go in `~/src` (or `~/src/<group>/<name>`).
 
 ## Bootstrap: Coder
 
-Set this repo as the workspace's dotfiles URL (or run
+If the client's template already sets the workspace's dotfiles URL to their
+own repo, leave it alone and clone this one by hand; see
+[Client machines](#client-machines). Otherwise, set this repo as the
+workspace's dotfiles URL (or run
 `coder dotfiles https://github.com/shurikai/dotfiles`). Coder runs
 `install.sh`, which picks `role=work`. If `env | grep ^CODER` shows nothing on
 your image, set `DOTFILES_ROLE=work` in the template or `~/personalize`.
@@ -137,16 +140,18 @@ A client's image already has a shell setup worth keeping: their aliases,
 helper functions, proxy settings and runtimes. On the `work` role (data flag
 `client`), this repo layers on top of that instead of replacing it:
 
-- **`~/.bashrc` stays theirs.** On every apply,
-  `run_after_50-client-bashrc-hook.sh.tmpl` makes sure it ends with one marked
-  block (`# >>> shurikai/dotfiles >>>`) that sources
-  `~/.config/bash/personal.bash`. Their setup loads first; yours layers on top.
-  If an image rebuild regenerates the file, the next start puts the block back.
+- **`~/.bashrc` stays theirs.** It's often a symlink into the client's own
+  dotfiles repo, so nothing here edits it. Instead, chezmoi writes
+  `~/.bash_aliases`, which Ubuntu-style `~/.bashrc` files source partway
+  through, and that sources `~/.config/bash/personal.bash`. Your prompt and
+  history settings override theirs; their completion setup and helper
+  functions load after yours. `run_after_50-client-shell-check.sh.tmpl` warns
+  on apply if a client's `~/.bashrc` doesn't source `~/.bash_aliases`.
 - **`~/.gitconfig` stays theirs.** Your git settings go to
   `~/.config/git/config`, which git reads as well. Where both set something,
   theirs wins. Put the client email in `~/.config/git/local`.
-- **Their runtimes are used.** mise skips Go; the image's Go and its module
-  proxy stay in charge.
+- **Their runtimes are used.** mise skips Go and uv; the image's Go (with its
+  module proxy) and Python tooling stay in charge.
 - No zsh, zsh plugins or btop.
 
 Client-specific settings (work email, extra aliases for their services) go in
@@ -157,12 +162,20 @@ Every client rule is keyed off the flag, so `grep -rn '\.client' home/` lists
 all of it. To change how clients work, or to drop the behavior from the repo,
 that's the full list of places to edit.
 
+**Don't use the workspace's dotfiles setting for this repo** if the client's
+template already points it at their own repo: it holds one URL, and theirs
+probably builds `~/.bashrc`. Clone this repo to `~/.local/share/chezmoi`
+instead (not `~/.config/coderv2/dotfiles`, which is Coder's clone of theirs)
+and run `DOTFILES_ROLE=work ./install.sh` once. The home directory persists,
+so after that `chezmoi update` is all it takes.
+
 **Upgrading a workspace set up by an older version of this repo**, which
-replaced `~/.bashrc` and `~/.gitconfig` outright: the hook notices the old
-chezmoi-written `~/.bashrc`, saves it as `~/.bashrc.chezmoi-old`, and restores
-`~/pre-chezmoi/.bashrc` (or `/etc/skel/.bashrc` if there's no backup) before
-adding the block. `~/.gitconfig` is left as is; if you have a
-`~/pre-chezmoi/.gitconfig`, copy it back by hand.
+replaced `~/.bashrc` and `~/.gitconfig` outright: if the old chezmoi-written
+`~/.bashrc` is still there, the check script saves it as
+`~/.bashrc.chezmoi-old` and restores `~/pre-chezmoi/.bashrc` (a symlink stays a
+symlink). Without that backup it only says how to get the client's back.
+`~/.gitconfig` is left as is; if you have a `~/pre-chezmoi/.gitconfig`, copy
+it back by hand.
 
 ## Multiplexing: WezTerm and tmux
 

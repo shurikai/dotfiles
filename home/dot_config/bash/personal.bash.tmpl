@@ -1,12 +1,12 @@
 # Managed by chezmoi: edit with `chezmoi edit ~/.config/bash/personal.bash`.
 # Role: {{ .role }}
 #
-# Personal bash setup, sourced by ~/.bashrc. Mirrors ~/.zshrc minus the
-# zsh-only plugins.
+# Personal bash setup. Mirrors ~/.zshrc minus the zsh-only plugins.
 #   Own machines: ~/.bashrc is a chezmoi-managed stub that sources this file.
-#   Client machines: ~/.bashrc stays the client's; a marked block at its end
-#   sources this file, so their aliases and functions load first and this
-#   layers on top (see run_after_50-client-bashrc-hook.sh.tmpl).
+#   Client machines: ~/.bashrc stays the client's. Theirs sources
+#   ~/.bash_aliases, which sources this file, partway through: their prompt
+#   and history settings come before it (so this overrides them), and their
+#   bash-completion setup and helper functions come after.
 case $- in *i*) ;; *) return ;; esac
 
 # ---- Environment ---------------------------------------------------------------
@@ -21,13 +21,16 @@ HISTFILESIZE=50000
 HISTCONTROL=ignoreboth:erasedups
 shopt -s histappend checkwinsize
 
+{{ if not .client -}}
 # ---- Completion ----------------------------------------------------------------
+# (Client ~/.bashrc files load bash-completion themselves, after this file.)
 if ! shopt -oq posix && [ -z "${BASH_COMPLETION_VERSINFO:-}" ]; then
     for f in /usr/share/bash-completion/bash_completion /etc/bash_completion; do
         [ -f "$f" ] && . "$f" && break
     done
 fi
 
+{{ end -}}
 # ---- Toolchain -----------------------------------------------------------------
 command -v mise >/dev/null 2>&1 && eval "$(mise activate bash)"
 

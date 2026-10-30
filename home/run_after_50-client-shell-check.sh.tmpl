@@ -1,0 +1,31 @@
+{{- if .client -}}
+#!/bin/sh
+# Client machines only. Checks that the client's ~/.bashrc will load
+# ~/.bash_aliases (and through it, your personal.bash). Never edits their
+# files: their ~/.bashrc may be a symlink into their own dotfiles repo.
+set -eu
+
+rc="$HOME/.bashrc"
+
+# Older versions of this repo replaced ~/.bashrc on the work role. If that
+# file is still in place, put back the backup made before the first apply.
+# `cp -a` keeps it a symlink if the original was one.
+if [ -f "$rc" ] && [ ! -L "$rc" ] && head -n 1 "$rc" | grep -q '^# Managed by chezmoi'; then
+    if [ -e "$HOME/pre-chezmoi/.bashrc" ] || [ -L "$HOME/pre-chezmoi/.bashrc" ]; then
+        mv "$rc" "$rc.chezmoi-old"
+        cp -a "$HOME/pre-chezmoi/.bashrc" "$rc"
+        echo "client-shell: restored ~/.bashrc from ~/pre-chezmoi (old one saved as ~/.bashrc.chezmoi-old)"
+    else
+        echo "client-shell: ~/.bashrc was written by an older version of these dotfiles and" >&2
+        echo "              there's no ~/pre-chezmoi/.bashrc to restore. Put the client's back by" >&2
+        echo "              re-running their dotfiles install or restarting the workspace." >&2
+    fi
+fi
+
+if [ ! -e "$rc" ]; then
+    echo "client-shell: no ~/.bashrc yet; your setup loads once one exists that sources ~/.bash_aliases." >&2
+elif ! grep -q 'bash_aliases' "$rc"; then
+    echo "client-shell: ~/.bashrc doesn't source ~/.bash_aliases, so personal.bash won't load." >&2
+    echo "              Source ~/.config/bash/personal.bash some other way on this client." >&2
+fi
+{{ end -}}

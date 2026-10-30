@@ -27,7 +27,11 @@ eza = "latest"
 go = "latest"
 {{- end }}
 node = "lts"        # runtime for npm-distributed language servers (Mason)
+{{- if not .client }}
+# Client images ship their own Python tooling. uv also fails there: mise
+# verifies its download against sigstore, which locked-down networks block.
 uv = "latest"
+{{- end }}
 
 # Go tooling that conform.nvim calls on save
 "go:golang.org/x/tools/cmd/goimports" = "latest"

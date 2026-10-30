@@ -14,13 +14,15 @@
 .zprofile
 .zshenv
 .config/btop
-# The client owns these. personal.bash is hooked into their ~/.bashrc by
-# run_after_50-client-bashrc-hook.sh.tmpl; git settings go to
-# ~/.config/git/config instead.
+# The client owns these (often as symlinks into their own dotfiles repo).
+# personal.bash loads through ~/.bash_aliases, which their ~/.bashrc sources;
+# git settings go to ~/.config/git/config instead.
 .bashrc
 .gitconfig
 {{- else -}}
-# Own machines: git settings live in ~/.gitconfig.
+# Own machines: ~/.bashrc sources personal.bash directly, and git settings
+# live in ~/.gitconfig.
+.bash_aliases
 .config/git/config
 {{- end }}
 

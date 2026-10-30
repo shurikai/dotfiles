@@ -1,0 +1,7 @@
+# Managed by chezmoi. Client machines only.
+#
+# The client's ~/.bashrc (Ubuntu-style) sources ~/.bash_aliases if it exists,
+# so this is the hook: it loads your personal setup without touching any file
+# the client owns. Their ~/.bashrc may be a symlink into their own dotfiles
+# repo, which is why nothing gets appended to it.
+[ -f "$HOME/.config/bash/personal.bash" ] && . "$HOME/.config/bash/personal.bash"
